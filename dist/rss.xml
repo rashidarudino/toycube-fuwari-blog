@@ -1,6 +1,208 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Toycube</title><description>Blog</description><link>https://fuwari.vercel.app/</link><language>en</language><item><title>Adding Astro Components to MDX</title><link>https://fuwari.vercel.app/posts/cooking/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/cooking/</guid><pubDate>Sat, 24 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;import TaskBoard from &apos;../../components/todo/TaskBoard.astro&apos;&lt;/p&gt;
-&lt;p&gt;&amp;lt;TaskBoard client:load /&amp;gt;&lt;/p&gt;
-&lt;p&gt;blogging.mdx&lt;/p&gt;
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Toycube</title><description>Blog</description><link>https://fuwari.vercel.app/</link><language>en</language><item><title>Adding Astro Components to MDX</title><link>https://fuwari.vercel.app/posts/tasks/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/tasks/</guid><pubDate>Sat, 24 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;import TaskBoard from &apos;../../components/todo/TaskBoard.astro&apos;&lt;/p&gt;
+&lt;p&gt;Last edited: 2024-08-26&lt;/p&gt;
+&lt;p&gt;In this blog post, we&apos;ll add an Astro component to an MDX blog. Specifically, we&apos;ll integrate a task board component that manages tasks with create, read, update and delete operations (CRUD).
+In this guide, the backend is running on a express node.js server with mySQL for data and persistence.&lt;/p&gt;
+&lt;p&gt;To see this in action, here’s how you can embed this task board in your MDX blog:&lt;/p&gt;
+&lt;p&gt;&amp;lt;TaskBoard client:load /&amp;gt;
+First, create a &lt;code&gt;TaskBoard.astro&lt;/code&gt; file.&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;---
+import TaskList from &quot;./TaskList.svelte&quot;;
+
+---
+
+&amp;lt;div&amp;gt;
+  &amp;lt;h1&amp;gt;Task Board&amp;lt;/h1&amp;gt;
+  &amp;lt;TaskList client:load /&amp;gt;
+&amp;lt;/div&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;The Role of &lt;code&gt;.astro&lt;/code&gt; Files&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;.astro&lt;/code&gt; files are part of the Astro framework, which allows you to create static websites with modern web technologies. Astro components are used to build and compose static and interactive elements on your site.&lt;/p&gt;
+&lt;p&gt;In the context of this blog post, the &lt;code&gt;.astro&lt;/code&gt; file is essential because it serves as the container for your interactive task board component. Here’s how it works:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Component Definition&lt;/strong&gt;: The &lt;code&gt;TaskBoard.astro&lt;/code&gt; file defines the structure and behavior of your task board. This includes importing Svelte components and specifying how they should be rendered.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Static and Dynamic Content&lt;/strong&gt;: &lt;code&gt;.astro&lt;/code&gt; files allow you to mix static HTML with dynamic components. In this case, it’s used to render a task board that incorporates the Svelte &lt;code&gt;TaskList&lt;/code&gt; component.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Client-Side Rendering&lt;/strong&gt;: By using &lt;code&gt;client:load&lt;/code&gt;, you ensure that the component is rendered on the client side after the initial page load. This is crucial for components that require user interaction, like our task board.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Now we need to create a &lt;code&gt;TaskList.svelte&lt;/code&gt; file.&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;&amp;lt;script lang=&quot;ts&quot;&amp;gt;
+  import { onMount } from &apos;svelte&apos;;
+  import { faPlus, faTrash } from &apos;@fortawesome/free-solid-svg-icons&apos;;
+  import Fa from &apos;svelte-fa&apos;;
+  // Define the type for tasks
+  type Task = { id: number; text: string; isCompleted: boolean };
+
+  // State variables
+  let tasks: Task[] = [];
+  let newTask: string = &apos;&apos;;
+  let error: string | null = null;
+  const MAX_TASK_LENGTH = 100; // Set the max character length for tasks
+
+  // Fetch tasks from the backend
+  const fetchTasks = async () =&amp;gt; {
+    try {
+      const response = await fetch(&apos;http://toycube.com.au/api/tasks&apos;);
+      if (!response.ok) throw new Error(&apos;Failed to fetch tasks&apos;);
+      tasks = await response.json();
+    } catch (err) {
+      showAlert(err.message);
+    }
+  };
+
+  // Add a new task
+  const addTask = async () =&amp;gt; {
+    if (newTask.trim() === &apos;&apos;) {
+      showAlert(&apos;Task cannot be empty.&apos;);
+      return;
+    }
+    if (newTask.length &amp;gt; MAX_TASK_LENGTH) {
+      showAlert(
+        `Task exceeds maximum length of ${MAX_TASK_LENGTH} characters.`
+      );
+      return;
+    }
+    try {
+      const response = await fetch(&apos;http://toycube.com.au/api/tasks&apos;, {
+        method: &apos;POST&apos;,
+        headers: {
+          &apos;Content-Type&apos;: &apos;application/json&apos;,
+        },
+        body: JSON.stringify({ text: newTask }),
+      });
+      if (!response.ok) throw new Error(&apos;Failed to add task&apos;);
+      const task = await response.json();
+      tasks = [...tasks, task];
+      newTask = &apos;&apos;;
+    } catch (err) {
+      showAlert(err.message);
+    }
+  };
+
+  // Update an existing task
+  const updateTask = async (id: number, text: string, isCompleted: boolean) =&amp;gt; {
+    try {
+      const response = await fetch(`http://toycube.com.au/api/tasks/${id}`, {
+        method: &apos;PUT&apos;,
+        headers: {
+          &apos;Content-Type&apos;: &apos;application/json&apos;,
+        },
+        body: JSON.stringify({ text, isCompleted }),
+      });
+      if (!response.ok) throw new Error(&apos;Failed to update task&apos;);
+      tasks = tasks.map((task) =&amp;gt;
+        task.id === id ? { ...task, text, isCompleted } : task
+      );
+    } catch (err) {
+      showAlert(err.message);
+    }
+  };
+
+  // Delete a task
+  const deleteTask = async (id: number) =&amp;gt; {
+    try {
+      const response = await fetch(`http://toycube.com.au/api/tasks/${id}`, {
+        method: &apos;DELETE&apos;,
+      });
+      if (!response.ok) throw new Error(&apos;Failed to delete task&apos;);
+      tasks = tasks.filter((task) =&amp;gt; task.id !== id);
+    } catch (err) {
+      showAlert(err.message);
+    }
+  };
+
+  // Show an alert message
+  const showAlert = (message: string) =&amp;gt; {
+    error = message;
+    setTimeout(() =&amp;gt; {
+      error = null;
+    }, 5000); // Clear error message after 5 seconds
+  };
+
+  // Fetch tasks on component mount
+  onMount(fetchTasks);
+&amp;lt;/script&amp;gt;
+
+&amp;lt;div class=&quot;flex items-center mb-4&quot;&amp;gt;
+  &amp;lt;input
+    type=&quot;text&quot;
+    bind:value={newTask}
+    placeholder=&quot;New task&quot;
+    class=&quot;flex-grow p-2 border rounded mr-2&quot;
+  /&amp;gt;
+  &amp;lt;button
+    on:click={addTask}
+    class=&quot;bg-blue-500 text-white p-2 rounded hover:bg-blue-600&quot;
+  &amp;gt;
+    &amp;lt;Fa icon={faPlus} /&amp;gt;
+  &amp;lt;/button&amp;gt;
+&amp;lt;/div&amp;gt;
+
+{#if error}
+  &amp;lt;div class=&quot;text-red-500 bg-red-100 border border-red-400 p-2 rounded mb-4&quot;&amp;gt;
+    {error}
+  &amp;lt;/div&amp;gt;
+{/if}
+
+&amp;lt;ol class=&quot;list-decimal pl-6&quot;&amp;gt;
+  {#each tasks as task, index}
+    &amp;lt;li&amp;gt;
+      &amp;lt;input
+        type=&quot;checkbox&quot;
+        checked={task.isCompleted}
+        on:change={() =&amp;gt; updateTask(task.id, task.text, !task.isCompleted)}
+        class=&quot;mr-3 w-6 h-6&quot;
+      /&amp;gt;
+      &amp;lt;input
+        type=&quot;text&quot;
+        bind:value={task.text}
+        on:change={(e) =&amp;gt; updateTask(task.id, e.target.value, task.isCompleted)}
+        class=&quot;flex-grow p-2 border rounded mr-3 w-96 shadow&quot;
+      /&amp;gt;
+      &amp;lt;button
+        on:click={() =&amp;gt; deleteTask(task.id)}
+        class=&quot;bg-red-500 text-white p-2 rounded hover:bg-red-600&quot;
+      &amp;gt;
+        &amp;lt;Fa icon={faTrash} /&amp;gt;
+      &amp;lt;/button&amp;gt;
+    &amp;lt;/li&amp;gt;
+  {/each}
+&amp;lt;/ol&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;h3&gt;The Role of &lt;code&gt;.svelte&lt;/code&gt; Files&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;.svelte&lt;/code&gt; files are part of the Svelte framework, which is known for its efficient compilation to highly optimised JavaScript. Svelte components offer a reactive and component-based approach to building user interfaces.&lt;/p&gt;
+&lt;p&gt;In the &lt;code&gt;TaskList.svelte&lt;/code&gt; file, you define the core functionality of the task board:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Task Management&lt;/strong&gt;: This file handles the creation, updating, and deletion of tasks. It manages state and interacts with the backend to fetch and update tasks.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Reactive Components&lt;/strong&gt;: Svelte’s reactive features make it easy to handle user interactions, such as adding a new task or marking a task as completed. The component automatically updates the view based on changes in state.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Integration&lt;/strong&gt;: The &lt;code&gt;TaskList.svelte&lt;/code&gt; file is imported into the &lt;code&gt;TaskBoard.astro&lt;/code&gt; file. This integration allows you to use Svelte’s powerful reactive features within the Astro framework, combining the best of both worlds.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h3&gt;How They Work Together&lt;/h3&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Astro Component&lt;/strong&gt;: The &lt;code&gt;TaskBoard.astro&lt;/code&gt; file acts as a bridge, integrating the Svelte component into the static content of your blog. It imports the Svelte &lt;code&gt;TaskList&lt;/code&gt; component and ensures it is rendered correctly.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Interactive Functionality&lt;/strong&gt;: The Svelte component provides the interactive features, such as adding and managing tasks. The &lt;code&gt;.astro&lt;/code&gt; file makes sure this component is loaded and displayed on the client side.&lt;/p&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;p&gt;&lt;strong&gt;Embedding in MDX&lt;/strong&gt;: By importing the &lt;code&gt;TaskBoard&lt;/code&gt; component into your MDX file and using it with &lt;code&gt;&amp;lt;TaskBoard client:load /&amp;gt;&lt;/code&gt;, you embed interactive functionality into your static blog content. This enhances the user experience by adding dynamic elements directly within your posts.&lt;/p&gt;
+&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Import the TaskBoard component from your Astro project, and embed the TaskBoard component into your blog content:
+This setup allows you to display the task board within your MDX content, making it interactive and functional.&lt;/p&gt;
+&lt;p&gt;By following these steps, you can incorporate interactive Astro components into your MDX blog posts.
+tasks.mdx&lt;/p&gt;
 &lt;pre&gt;&lt;code&gt;---
 title: Adding Astro Components to MDX
 published: 2024-08-24
@@ -14,11 +216,20 @@ import TaskBoard from &apos;../../components/todo/TaskBoard.astro&apos;
 
 &amp;lt;TaskBoard client:load /&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;
-</content:encoded></item><item><title>Crochet Plants</title><link>https://fuwari.vercel.app/posts/crochet/crochet/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/crochet/crochet/</guid><pubDate>Fri, 23 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;This month&apos;s crochet creations. :D
+&lt;p&gt;:::tip&lt;/p&gt;
+&lt;h3&gt;Future Enhancements&lt;/h3&gt;
+&lt;p&gt;And finally, here are a few potential improvements to make it even better:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Rearranging Tasks&lt;/strong&gt;: Enable drag-and-drop reordering for easier prioritisation.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Adding Creation Dates&lt;/strong&gt;: Show when tasks were created to track progress over time.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Enhanced Filtering and Sorting&lt;/strong&gt;: Add options to sort and filter tasks by due date or priority.
+:::&lt;/li&gt;
+&lt;/ul&gt;
+</content:encoded></item><item><title>Crochet Plants</title><link>https://fuwari.vercel.app/posts/crochet/crochet-plants/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/crochet/crochet-plants/</guid><pubDate>Fri, 23 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;This month&apos;s crochet creations. :D
 &lt;img src=&quot;trio-cactus.jpg&quot; alt=&quot;Barrel cacti in cobalt-coloured yarn.&quot; /&gt;
 &lt;img src=&quot;cactus.jpg&quot; alt=&quot;Spiral barrel cactus.&quot; /&gt;
 &lt;img src=&quot;corn.jpg&quot; alt=&quot;Comfy-looking corn with leaf garments.&quot; /&gt;&lt;/p&gt;
-</content:encoded></item><item><title>Hydroponic Journey</title><link>https://fuwari.vercel.app/posts/hydroponics/hydroponics/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/hydroponics/hydroponics/</guid><pubDate>Fri, 23 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;Starting a hydroponic garden at the beginning of this year was a mix of excitement and overwhelm. The journey involved figuring out the right growing medium, nutrients, plant varieties, water pH, EC levels, temperature control, and setting up the right system to support all these elements.&lt;/p&gt;
+</content:encoded></item><item><title>Hydroponic Journey</title><link>https://fuwari.vercel.app/posts/hydroponics/hydroponic-journey/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/hydroponics/hydroponic-journey/</guid><pubDate>Fri, 23 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;Starting a hydroponic garden at the beginning of this year was a mix of excitement and overwhelm. The journey involved figuring out the right growing medium, nutrients, plant varieties, water pH, EC levels, temperature control, and setting up the right system to support all these elements.&lt;/p&gt;
 &lt;h2&gt;May 14: The Beginnings&lt;/h2&gt;
 &lt;p&gt;It all started with two basic &lt;a href=&quot;https://www.bunnings.com.au/hydro-planter_p0207206?srsltid=AfmBOoofyeFJ0N1TsaARcMLbb4OhAFZRgRXwBnPbs-1WU_66uV9-gJBV&quot;&gt;Hydro planters&lt;/a&gt; from Bunnings, a thoughtful gift from my family. I aimed to start with a small hydroponic garden, roughly the size of a goldfish bowl. Unfortunately, my initial choice of fish pebbles as a growing medium didn&apos;t work out well. The pebbles led to dirty water and frequent changes of the nutrient solution. A pump seemed like a good fix, but it also meant needing a larger container to accommodate all the plants.&lt;/p&gt;
 &lt;h2&gt;June: Troubles and Fixes&lt;/h2&gt;
@@ -86,7 +297,7 @@ import TaskBoard from &apos;../../components/todo/TaskBoard.astro&apos;
 &lt;/ol&gt;
 &lt;h2&gt;Conclusion&lt;/h2&gt;
 &lt;p&gt;Starting a hydroponic system requires careful planning and adjustment. With the right setup, you can create a successful indoor garden. Begin with basic equipment, monitor your system regularly, and be prepared to make improvements as you learn more about hydroponic gardening. Happy growing!&lt;/p&gt;
-</content:encoded></item><item><title>BIM in Revit</title><link>https://fuwari.vercel.app/posts/revit/revit/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/revit/revit/</guid><description>Posted by Rashida Rudino</description><pubDate>Fri, 23 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;In 2023, during my undergraduate studies at UNSW, I had the opportunity to dive deeply into Building Information Modeling (BIM) through the architecture course CODE2170. This course was all about mastering Revit, a key tool in architectural design. My role involved creating detailed 3D renderings, floor plans, elevations, sections, and area schedules for various types of buildings, including residential homes, housing complexes, and community centers.&lt;/p&gt;
+</content:encoded></item><item><title>BIM in Revit</title><link>https://fuwari.vercel.app/posts/revit/bim-in-revit/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/revit/bim-in-revit/</guid><description>Posted by Rashida Rudino</description><pubDate>Fri, 23 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;In 2023, during my undergraduate studies at UNSW, I had the opportunity to dive deeply into Building Information Modeling (BIM) through the architecture course CODE2170. This course was all about mastering Revit, a key tool in architectural design. My role involved creating detailed 3D renderings, floor plans, elevations, sections, and area schedules for various types of buildings, including residential homes, housing complexes, and community centers.&lt;/p&gt;
 &lt;p&gt;A major part of my work was developing 3D renderings in Revit. I set up camera views, applied materials, and adjusted lighting to produce realistic visualizations of our designs. This helped in presenting our ideas clearly and effectively. I also focused on creating comprehensive documentation, including floor plans where I precisely placed walls, doors, and windows; elevations showing the exterior of the buildings; and sections providing vertical cuts through the structure to highlight interior details.
 &lt;img src=&quot;column-rotation.gif&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
 &lt;p&gt;Another important aspect was managing area schedules. Using Revit’s tools, I calculated floor areas, room volumes, and other metrics to ensure our designs met spatial requirements and building codes. This meticulous documentation was essential for both design accuracy and compliance.
@@ -96,7 +307,7 @@ Working with a group of international university students added a unique dimensi
 This project not only advanced my Revit skills—such as mastering the Family Editor for creating custom components and using the Annotation Tool for detailed notes—but also provided valuable experience in handling complex BIM projects. I learned how to leverage Revit’s features for precise modeling and how to collaborate effectively within a diverse group of peers.&lt;/p&gt;
 &lt;p&gt;Overall, CODE2170 was an incredible chance to develop my technical skills in Revit and tackle real-world architectural challenges.&lt;/p&gt;
 &lt;p&gt;&lt;img src=&quot;multistorey.png&quot; alt=&quot;alt text&quot; /&gt;&lt;/p&gt;
-</content:encoded></item><item><title>Simple Figma Design Tutorial for a Web App</title><link>https://fuwari.vercel.app/posts/ui/ui/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/ui/ui/</guid><pubDate>Fri, 23 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;Welcome to your quick guide on getting started with designing a web app in Figma! Whether you&apos;re new to design or just need a refresher, this guide will walk you through creating a minimalistic and functional web app design. Let’s dive in!&lt;/p&gt;
+</content:encoded></item><item><title>Simple Figma Design Tutorial for a Web App</title><link>https://fuwari.vercel.app/posts/ui/simple-figma-design/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/ui/simple-figma-design/</guid><pubDate>Fri, 23 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;Welcome to your quick guide on getting started with designing a web app in Figma! Whether you&apos;re new to design or just need a refresher, this guide will walk you through creating a minimalistic and functional web app design. Let’s dive in!&lt;/p&gt;
 &lt;h2&gt;1. Start Your Project 🚀&lt;/h2&gt;
 &lt;ol&gt;
 &lt;li&gt;

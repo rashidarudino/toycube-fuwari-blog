@@ -1,0 +1,237 @@
+---
+title: Adding Astro Components to MDX
+published: 2024-08-24
+description: ''
+image: ''
+tags: []
+category: 'Programming'
+draft: false 
+---
+import TaskBoard from '../../components/todo/TaskBoard.astro'
+
+Last edited: 2024-08-26
+
+In this blog post, we'll add an Astro component to an MDX blog. Specifically, we'll integrate a task board component that manages tasks with create, read, update and delete operations (CRUD).
+In this guide, the backend is running on a express node.js server with mySQL for data and persistence.
+
+To see this in action, here’s how you can embed this task board in your MDX blog:
+
+<TaskBoard client:load />
+First, create a `TaskBoard.astro` file.
+```astro
+---
+import TaskList from "./TaskList.svelte";
+
+---
+
+<div>
+  <h1>Task Board</h1>
+  <TaskList client:load />
+</div>
+```
+
+### The Role of `.astro` Files
+
+`.astro` files are part of the Astro framework, which allows you to create static websites with modern web technologies. Astro components are used to build and compose static and interactive elements on your site.
+
+In the context of this blog post, the `.astro` file is essential because it serves as the container for your interactive task board component. Here’s how it works:
+
+1. **Component Definition**: The `TaskBoard.astro` file defines the structure and behavior of your task board. This includes importing Svelte components and specifying how they should be rendered.
+
+2. **Static and Dynamic Content**: `.astro` files allow you to mix static HTML with dynamic components. In this case, it’s used to render a task board that incorporates the Svelte `TaskList` component.
+
+3. **Client-Side Rendering**: By using `client:load`, you ensure that the component is rendered on the client side after the initial page load. This is crucial for components that require user interaction, like our task board.
+
+Now we need to create a `TaskList.svelte` file.
+```ts
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { faPlus, faTrash } from '@fortawesome/free-solid-svg-icons';
+  import Fa from 'svelte-fa';
+  // Define the type for tasks
+  type Task = { id: number; text: string; isCompleted: boolean };
+
+  // State variables
+  let tasks: Task[] = [];
+  let newTask: string = '';
+  let error: string | null = null;
+  const MAX_TASK_LENGTH = 100; // Set the max character length for tasks
+
+  // Fetch tasks from the backend
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch('http://toycube.com.au/api/tasks');
+      if (!response.ok) throw new Error('Failed to fetch tasks');
+      tasks = await response.json();
+    } catch (err) {
+      showAlert(err.message);
+    }
+  };
+
+  // Add a new task
+  const addTask = async () => {
+    if (newTask.trim() === '') {
+      showAlert('Task cannot be empty.');
+      return;
+    }
+    if (newTask.length > MAX_TASK_LENGTH) {
+      showAlert(
+        `Task exceeds maximum length of ${MAX_TASK_LENGTH} characters.`
+      );
+      return;
+    }
+    try {
+      const response = await fetch('http://toycube.com.au/api/tasks', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: newTask }),
+      });
+      if (!response.ok) throw new Error('Failed to add task');
+      const task = await response.json();
+      tasks = [...tasks, task];
+      newTask = '';
+    } catch (err) {
+      showAlert(err.message);
+    }
+  };
+
+  // Update an existing task
+  const updateTask = async (id: number, text: string, isCompleted: boolean) => {
+    try {
+      const response = await fetch(`http://toycube.com.au/api/tasks/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text, isCompleted }),
+      });
+      if (!response.ok) throw new Error('Failed to update task');
+      tasks = tasks.map((task) =>
+        task.id === id ? { ...task, text, isCompleted } : task
+      );
+    } catch (err) {
+      showAlert(err.message);
+    }
+  };
+
+  // Delete a task
+  const deleteTask = async (id: number) => {
+    try {
+      const response = await fetch(`http://toycube.com.au/api/tasks/${id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) throw new Error('Failed to delete task');
+      tasks = tasks.filter((task) => task.id !== id);
+    } catch (err) {
+      showAlert(err.message);
+    }
+  };
+
+  // Show an alert message
+  const showAlert = (message: string) => {
+    error = message;
+    setTimeout(() => {
+      error = null;
+    }, 5000); // Clear error message after 5 seconds
+  };
+
+  // Fetch tasks on component mount
+  onMount(fetchTasks);
+</script>
+
+<div class="flex items-center mb-4">
+  <input
+    type="text"
+    bind:value={newTask}
+    placeholder="New task"
+    class="flex-grow p-2 border rounded mr-2"
+  />
+  <button
+    on:click={addTask}
+    class="bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+  >
+    <Fa icon={faPlus} />
+  </button>
+</div>
+
+{#if error}
+  <div class="text-red-500 bg-red-100 border border-red-400 p-2 rounded mb-4">
+    {error}
+  </div>
+{/if}
+
+<ol class="list-decimal pl-6">
+  {#each tasks as task, index}
+    <li>
+      <input
+        type="checkbox"
+        checked={task.isCompleted}
+        on:change={() => updateTask(task.id, task.text, !task.isCompleted)}
+        class="mr-3 w-6 h-6"
+      />
+      <input
+        type="text"
+        bind:value={task.text}
+        on:change={(e) => updateTask(task.id, e.target.value, task.isCompleted)}
+        class="flex-grow p-2 border rounded mr-3 w-96 shadow"
+      />
+      <button
+        on:click={() => deleteTask(task.id)}
+        class="bg-red-500 text-white p-2 rounded hover:bg-red-600"
+      >
+        <Fa icon={faTrash} />
+      </button>
+    </li>
+  {/each}
+</ol>
+```
+### The Role of `.svelte` Files
+
+`.svelte` files are part of the Svelte framework, which is known for its efficient compilation to highly optimised JavaScript. Svelte components offer a reactive and component-based approach to building user interfaces.
+
+In the `TaskList.svelte` file, you define the core functionality of the task board:
+
+1. **Task Management**: This file handles the creation, updating, and deletion of tasks. It manages state and interacts with the backend to fetch and update tasks.
+
+2. **Reactive Components**: Svelte’s reactive features make it easy to handle user interactions, such as adding a new task or marking a task as completed. The component automatically updates the view based on changes in state.
+
+3. **Integration**: The `TaskList.svelte` file is imported into the `TaskBoard.astro` file. This integration allows you to use Svelte’s powerful reactive features within the Astro framework, combining the best of both worlds.
+
+### How They Work Together
+
+1. **Astro Component**: The `TaskBoard.astro` file acts as a bridge, integrating the Svelte component into the static content of your blog. It imports the Svelte `TaskList` component and ensures it is rendered correctly.
+
+2. **Interactive Functionality**: The Svelte component provides the interactive features, such as adding and managing tasks. The `.astro` file makes sure this component is loaded and displayed on the client side.
+
+3. **Embedding in MDX**: By importing the `TaskBoard` component into your MDX file and using it with `<TaskBoard client:load />`, you embed interactive functionality into your static blog content. This enhances the user experience by adding dynamic elements directly within your posts.
+
+Import the TaskBoard component from your Astro project, and embed the TaskBoard component into your blog content:
+This setup allows you to display the task board within your MDX content, making it interactive and functional. 
+
+By following these steps, you can incorporate interactive Astro components into your MDX blog posts.
+tasks.mdx
+```md
+---
+title: Adding Astro Components to MDX
+published: 2024-08-24
+description: ''
+image: ''
+tags: []
+category: 'Recipes'
+draft: false 
+---
+import TaskBoard from '../../components/todo/TaskBoard.astro'
+
+<TaskBoard client:load />
+```
+:::tip
+### Future Enhancements
+
+And finally, here are a few potential improvements to make it even better:
+
+- **Rearranging Tasks**: Enable drag-and-drop reordering for easier prioritisation.
+- **Adding Creation Dates**: Show when tasks were created to track progress over time.
+- **Enhanced Filtering and Sorting**: Add options to sort and filter tasks by due date or priority.
+:::
