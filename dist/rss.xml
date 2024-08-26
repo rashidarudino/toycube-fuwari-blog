@@ -1,4 +1,20 @@
-<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Toycube</title><description>Blog</description><link>https://fuwari.vercel.app/</link><language>en</language><item><title>Auguest Crochet near Spring</title><link>https://fuwari.vercel.app/posts/crochet/crochet/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/crochet/crochet/</guid><pubDate>Fri, 23 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;This month&apos;s crochet creations. :D
+<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/"><channel><title>Toycube</title><description>Blog</description><link>https://fuwari.vercel.app/</link><language>en</language><item><title>Adding Astro Components to MDX</title><link>https://fuwari.vercel.app/posts/cooking/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/cooking/</guid><pubDate>Sat, 24 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;import TaskBoard from &apos;../../components/todo/TaskBoard.astro&apos;&lt;/p&gt;
+&lt;p&gt;&amp;lt;TaskBoard client:load /&amp;gt;&lt;/p&gt;
+&lt;p&gt;blogging.mdx&lt;/p&gt;
+&lt;pre&gt;&lt;code&gt;---
+title: Adding Astro Components to MDX
+published: 2024-08-24
+description: &apos;&apos;
+image: &apos;&apos;
+tags: []
+category: &apos;Recipes&apos;
+draft: false 
+---
+import TaskBoard from &apos;../../components/todo/TaskBoard.astro&apos;
+
+&amp;lt;TaskBoard client:load /&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+</content:encoded></item><item><title>Crochet Plants</title><link>https://fuwari.vercel.app/posts/crochet/crochet/</link><guid isPermaLink="true">https://fuwari.vercel.app/posts/crochet/crochet/</guid><pubDate>Fri, 23 Aug 2024 00:00:00 GMT</pubDate><content:encoded>&lt;p&gt;This month&apos;s crochet creations. :D
 &lt;img src=&quot;trio-cactus.jpg&quot; alt=&quot;Barrel cacti in cobalt-coloured yarn.&quot; /&gt;
 &lt;img src=&quot;cactus.jpg&quot; alt=&quot;Spiral barrel cactus.&quot; /&gt;
 &lt;img src=&quot;corn.jpg&quot; alt=&quot;Comfy-looking corn with leaf garments.&quot; /&gt;&lt;/p&gt;

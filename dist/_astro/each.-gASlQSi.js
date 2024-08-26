@@ -1,0 +1,1 @@
+function e(r){return void 0!==r?.length?r:Array.from(r)}export{e};

@@ -1,0 +1,29 @@
+---
+title: Adding Astro Components to MDX
+published: 2024-08-24
+description: ''
+image: ''
+tags: []
+category: 'Programming'
+draft: false 
+---
+import TaskBoard from '../../components/todo/TaskBoard.astro'
+
+<TaskBoard client:load />
+
+
+blogging.mdx
+```
+---
+title: Adding Astro Components to MDX
+published: 2024-08-24
+description: ''
+image: ''
+tags: []
+category: 'Recipes'
+draft: false 
+---
+import TaskBoard from '../../components/todo/TaskBoard.astro'
+
+<TaskBoard client:load />
+```

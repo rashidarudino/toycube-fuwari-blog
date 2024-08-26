@@ -1,0 +1,1 @@
+import{e as n,z as e,a as r,j as s,k as t,s as i}from"./ko.C187WMoN.js";const _=n,u={en:n,en_us:n,en_gb:n,en_au:n,zh_cn:e,zh_tw:r,ja:s,ja_jp:s,ko:t,ko_kr:t};function c(n){return u[n.toLowerCase()]||_}function g(n){return c(i.lang)[n]}export{g as i};
